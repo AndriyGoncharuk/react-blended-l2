@@ -1,5 +1,5 @@
 import { getPhotos } from 'apiService/photos';
-import { Form, Text } from 'components';
+import { Form, Loader, PhotosGallery, Text } from 'components';
 import { useEffect, useState } from 'react';
 
 export const Photos = () => {
@@ -8,10 +8,14 @@ export const Photos = () => {
   const [page, setPage] = useState(1);
 
   const [images, setImages] = useState([]);
-
+  
   const [isloading, setIsloading] = useState(false);
 
   const [error, setError] = useState(null);
+
+  const [isEmpty, setIsEmpty] = useState(false);
+
+const [isWisebele, setisWiseble] = useState(false)
 
   useEffect(() => {
     if (!query) {
@@ -20,9 +24,13 @@ export const Photos = () => {
     const fetchData = async () => {
       setIsloading(true);
       try {
-        const data = await getPhotos(query, page);
-        console.log(data);
-      } catch (error) {
+        const {photos, per_page, total_results} = await getPhotos(query, page);
+        if(!photos.length){
+          return setIsEmpty(true)
+        } 
+        setImages((pervImages)=> [...pervImages, ...photos])
+        setisWiseble(page<Math.ceil(total_results/per_page))
+        } catch (error) {
         setError(error);
       } finally {
         setIsloading(false);
@@ -33,11 +41,20 @@ export const Photos = () => {
 
   const onHandleSubmit = searchQuery => {
     setQuery(searchQuery);
+    setImages([]);
+    setPage(1);
+    setError(null);
+    setisWiseble(false);
+    setIsEmpty(false);
   };
   return (
     <>
       <Form onSubmit={onHandleSubmit} />
-      <Text textAlign="center">Let`s begin search 🔎</Text>
+      {images.length>0 && <PhotosGallery images={images}/>}
+      {!images.length && !isEmpty && <Text textAlign="center">Let`s begin search 🔎</Text>} 
+      {isloading && <Loader/>}
+      {error && <Text textAlign="center">❌ Something went wrong - {error}</Text>}
+      {isEmpty && <Text textAlign="center">Sorry. There are no images ... 😭</Text>}
     </>
   );
 };
